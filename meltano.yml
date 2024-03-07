@@ -11,16 +11,24 @@ plugins:
   extractors:
   - name: "tap-coingecko"
     namespace: "tap_coingecko"
+
     pip_url: -e .
+
     capabilities:
       - state
       - catalog
       - discover
       - about
       - stream-maps
+
     config:
       start_date: '2010-01-01T00:00:00Z'
       api_key: ${COINGECKO_API_KEY}
+
+    select:
+      - coin_list.*
+      - supported_currencies.*
+
     settings:
       - name: api_url
         kind: string
@@ -28,6 +36,7 @@ plugins:
         kind: password
       - name: start_date
         value: '2010-01-01T00:00:00Z'
+
   loaders:
     - name: target-jsonl
       variant: andyh1203

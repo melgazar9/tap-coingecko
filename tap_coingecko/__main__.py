@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from tap_coingecko.tap import Tapcoingecko
+from tap_coingecko.tap import TapCoingecko
 
-Tapcoingecko.cli()
+TapCoingecko.cli()

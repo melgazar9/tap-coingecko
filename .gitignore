@@ -1,6 +1,7 @@
 # Secrets and internal config files
 **/.secrets/*
 
+
 # Ignore meltano internal cache and sqlite systemdb
 
 .meltano/
@@ -134,3 +135,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+**/.idea
+config.json

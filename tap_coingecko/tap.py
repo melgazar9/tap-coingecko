@@ -5,7 +5,10 @@ from __future__ import annotations
 from singer_sdk import Tap
 from singer_sdk import typing as th
 
-from tap_coingecko.streams import CoinListStream
+from tap_coingecko.streams import *
+
+STREAMS = [CoinListStream, SupportedCurrenciesStream]
+
 
 class TapCoingecko(Tap):
     """coingecko tap class."""
@@ -40,7 +43,7 @@ class TapCoingecko(Tap):
         Returns:
             A list of discovered streams.
         """
-        return [CoinListStream(tap=self)]
+        return [stream(tap=self) for stream in STREAMS]
 
 
 if __name__ == "__main__":

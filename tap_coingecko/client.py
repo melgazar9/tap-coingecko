@@ -4,16 +4,11 @@ from __future__ import annotations
 
 import sys
 from typing import Any, Callable, Iterable
-
 import requests
 from singer_sdk.authenticators import APIKeyAuthenticator
 from singer_sdk.pagination import BaseAPIPaginator  # noqa: TCH002
 from singer_sdk.streams import RESTStream
-
-if sys.version_info >= (3, 9):
-    import importlib.resources as importlib_resources
-else:
-    import importlib_resources
+import importlib.resources as importlib_resources
 
 _Auth = Callable[[requests.PreparedRequest], requests.PreparedRequest]
 
