@@ -34,6 +34,14 @@ plugins:
           duration: "1h"
           top_coins: 1000
 
+        coins_list_with_market_data:
+          vs_currency: "usd"
+          ids: bag,ethereum,bitcoin
+          price_change_percentage: "7d"
+
+        coin_data_by_id:
+          id: bag
+          sparkline: "true"
 
     select:
       - '*.*'
