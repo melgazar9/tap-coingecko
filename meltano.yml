@@ -25,9 +25,18 @@ plugins:
       start_date: '2010-01-01T00:00:00Z'
       api_key: ${COINGECKO_API_KEY}
 
+      stream_params:
+        coin_list:
+          include_platform: "true"
+
+        top_gainers_losers:
+          vs_currency: "usd"
+          duration: "1h"
+          top_coins: 1000
+
+
     select:
-      - coin_list.*
-      - supported_currencies.*
+      - '*.*'
 
     settings:
       - name: api_url

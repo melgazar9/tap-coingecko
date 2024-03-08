@@ -7,8 +7,7 @@ from singer_sdk import typing as th
 
 from tap_coingecko.streams import *
 
-STREAMS = [CoinListStream, SupportedCurrenciesStream]
-
+STREAMS = [CoinListStream, SupportedCurrenciesStream, TopGainersLosersStream]
 
 class TapCoingecko(Tap):
     """coingecko tap class."""

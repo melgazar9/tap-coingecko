@@ -21,6 +21,10 @@ class CoingeckoStream(RESTStream):
         """Return the API URL root, configurable via tap settings."""
         return self.config["api_url"]
 
+    @property
+    def endpoint(self) -> str:
+        return f"{self.config.get('api_url')}{self.path}"
+
     records_jsonpath = "$[*]"
 
     # Set this value or override `get_new_paginator`.
