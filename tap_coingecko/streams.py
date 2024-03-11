@@ -117,7 +117,7 @@ class CoinsListWithMarketDataStream(CoingeckoStream):
             yield record
 
 
-class CoinsDataByIdStream(CoingeckoStream):
+class CoinDataByIdStream(CoingeckoStream):
     """Coingecko Recently Added Coins Stream."""
 
     name = "coin_data_by_id"
@@ -142,3 +142,51 @@ class CoinsDataByIdStream(CoingeckoStream):
             yield response.json()  # Yield the entire JSON response
         else:
             self.logger.error(f"Failed to fetch records from {endpoint}. Status code: {response.status_code}")
+
+
+class CoinTickersByIdStream(CoingeckoStream):
+    """Coingecko Tickers By Id Stream."""
+
+    name = "coin_tickers_by_id"
+    path = "/coins"
+    replication_key = None
+
+    schema = COIN_TICKERS_BY_ID_SCHEMA
+
+    def request_records(self, context: dict | None) -> Iterable[dict]:
+        stream_params = self.config.get('stream_params').get(self.name)
+        if stream_params and stream_params.get('id') and stream_params.get('id') == '*':
+            raise NotImplementedError("Cannot set dynamic stream to pull all tickers (yet). Can only pull one ticker at a time.")
+
+        endpoint = f"{self.endpoint}/{stream_params['id']}/tickers"
+        if stream_params:
+            stream_params.pop('id')
+            encoded_params = urlencode(stream_params)
+            endpoint = f"{endpoint}?{encoded_params}"
+
+        response = requests.get(endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")})
+        yield response.json()
+
+
+class CoinHistoricalDataByIdStream(CoingeckoStream):
+    """Coingecko Historical Data By ID Stream."""
+
+    name = "coin_historical_data_by_id"
+    path = "/coins"
+    replication_key = None
+
+    schema = COIN_HISTORICAL_DATA_BY_ID_SCHEMA
+
+    def request_records(self, context: dict | None) -> Iterable[dict]:
+        stream_params = self.config.get('stream_params').get(self.name)
+        if stream_params and stream_params.get('id') and stream_params.get('id') == '*':
+            raise NotImplementedError("Cannot set dynamic stream to pull all tickers (yet). Can only pull one ticker at a time.")
+
+        endpoint = f"{self.endpoint}/{stream_params['id']}/history"
+        if stream_params:
+            stream_params.pop('id')
+            encoded_params = urlencode(stream_params)
+            endpoint = f"{endpoint}?{encoded_params}"
+
+        response = requests.get(endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")})
+        yield response.json()

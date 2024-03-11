@@ -89,3 +89,49 @@ COINS_ID_SCHEMA = th.PropertiesList(
     th.Property("last_updated", th.DateTimeType),
     th.Property("tickers", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]}))
 ).to_dict()
+
+COIN_TICKERS_BY_ID_SCHEMA = th.PropertiesList(
+    th.Property("id", th.StringType),
+    th.Property("symbol", th.StringType),
+    th.Property("name", th.StringType),
+    th.Property("web_slug", th.StringType),
+    th.Property("asset_platform_id", th.StringType),
+    th.Property("platforms", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+    th.Property("detail_platforms", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+    th.Property("block_time_in_minutes", th.StringType),
+    th.Property("hashing_algorithm", th.StringType),
+    th.Property("categories", th.ArrayType(th.StringType)),
+    th.Property("preview_listing", th.BooleanType),
+    th.Property("public_notice", th.StringType),
+    th.Property("additional_notices", th.ArrayType(th.StringType)),
+    th.Property("localization", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+    th.Property("description", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+    th.Property("links", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+    th.Property("image", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+    th.Property("country_origin", th.StringType),
+    th.Property("genesis_date", th.DateTimeType),
+    th.Property("contract_address", th.StringType),
+    th.Property("sentiment_votes_up_percentage", th.NumberType),
+    th.Property("sentiment_votes_down_percentage", th.NumberType),
+    th.Property("watchlist_portfolio_users", th.NumberType),
+    th.Property("market_cap_rank", th.NumberType),
+    th.Property("market_data", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+    th.Property("community_data", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+    th.Property("developer_data", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+    th.Property("status_updates", th.ArrayType(th.StringType)),
+    th.Property("last_updated", th.DateTimeType),
+    th.Property("tickers", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]}))
+).to_dict()
+
+
+COIN_HISTORICAL_DATA_BY_ID_SCHEMA = th.PropertiesList(
+    th.Property("id", th.StringType),
+    th.Property("symbol", th.StringType),
+    th.Property("name", th.StringType),
+    th.Property("localization", th.CustomType({"anyOf": [{"type": "object"}, {"type": "string"}, {}]})),
+    th.Property("image", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+    th.Property("market_data", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+    th.Property("community_data", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+    th.Property("developer_data", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
+    th.Property("public_interest_stats", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]}))
+).to_dict()

@@ -13,7 +13,9 @@ STREAMS = [
     TopGainersLosersStream,
     RecentlyAddedCoinsStream,
     CoinsListWithMarketDataStream,
-    CoinsDataByIdStream
+    CoinDataByIdStream,
+    CoinTickersByIdStream,
+    CoinHistoricalDataByIdStream
 ]
 
 class TapCoingecko(Tap):
