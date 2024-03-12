@@ -104,8 +104,7 @@ class CoinsListWithMarketDataStream(CoingeckoStream):
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
         stream_params = self.config.get('stream_params').get(self.name)
-        if stream_params and stream_params.get('ids') and stream_params.get('ids') == '*':
-            raise NotImplementedError("Cannot set dynamic stream to pull all tickers yet.")
+        self.raise_dynamic_token_ids_not_allowed()
 
         endpoint = self.endpoint
         if stream_params:
@@ -128,9 +127,7 @@ class CoinDataByIdStream(CoingeckoStream):
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
         stream_params = self.config.get('stream_params').get(self.name)
-        if stream_params and (stream_params.get('ids') or stream_params.get('id')) and\
-                (stream_params.get('id') == '*' or stream_params.get('ids') == '*'):
-            raise NotImplementedError("Cannot set dynamic stream to pull all tickers (yet). Can only pull one ticker at a time.")
+        self.raise_dynamic_token_ids_not_allowed()
 
         endpoint = self.endpoint
         if stream_params:
@@ -155,8 +152,7 @@ class CoinTickersByIdStream(CoingeckoStream):
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
         stream_params = self.config.get('stream_params').get(self.name)
-        if stream_params and stream_params.get('id') and stream_params.get('id') == '*':
-            raise NotImplementedError("Cannot set dynamic stream to pull all tickers (yet). Can only pull one ticker at a time.")
+        self.raise_dynamic_token_ids_not_allowed()
 
         endpoint = f"{self.endpoint}/{stream_params['id']}/tickers"
         if stream_params:
@@ -179,8 +175,7 @@ class CoinHistoricalDataByIdStream(CoingeckoStream):
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
         stream_params = self.config.get('stream_params').get(self.name)
-        if stream_params and stream_params.get('id') and stream_params.get('id') == '*':
-            raise NotImplementedError("Cannot set dynamic stream to pull all tickers (yet). Can only pull one ticker at a time.")
+        self.raise_dynamic_token_ids_not_allowed()
 
         endpoint = f"{self.endpoint}/{stream_params['id']}/history"
         if stream_params:
@@ -190,3 +185,31 @@ class CoinHistoricalDataByIdStream(CoingeckoStream):
 
         response = requests.get(endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")})
         yield response.json()
+
+
+class CoinHistoricalDataChartByIdStream(CoingeckoStream):
+    """Coingecko Historical Data By ID Stream."""
+
+    name = "coin_historical_data_chart_by_id"
+    path = "/coins"
+    replication_key = None
+
+    schema = COIN_HISTORICAL_DATA_CHART_BY_ID_SCHEMA
+
+    def request_records(self, context: dict | None) -> Iterable[dict]:
+        stream_params = self.config.get('stream_params').get(self.name)
+        ticker = stream_params['id']
+        self.raise_dynamic_token_ids_not_allowed()
+
+        endpoint = f"{self.endpoint}/{stream_params['id']}/market_chart"
+        if stream_params:
+            stream_params.pop('id')
+            encoded_params = urlencode(stream_params)
+            endpoint = f"{endpoint}?{encoded_params}"
+
+        response = requests.get(endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")})
+        result = response.json()
+        result['prices'] = [[datetime.utcfromtimestamp(ts / 1000), price] for ts, price in result['prices']]
+        for record in result['prices']:
+            json_record = {'timestamp': record[0], 'ticker': ticker, 'price': record[1]}
+            yield json_record

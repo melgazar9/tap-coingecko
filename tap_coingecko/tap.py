@@ -15,7 +15,8 @@ STREAMS = [
     CoinsListWithMarketDataStream,
     CoinDataByIdStream,
     CoinTickersByIdStream,
-    CoinHistoricalDataByIdStream
+    CoinHistoricalDataByIdStream,
+    CoinHistoricalDataChartByIdStream
 ]
 
 class TapCoingecko(Tap):

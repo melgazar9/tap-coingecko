@@ -16,6 +16,11 @@ _Auth = Callable[[requests.PreparedRequest], requests.PreparedRequest]
 class CoingeckoStream(RESTStream):
     """coingecko stream class."""
 
+    def raise_dynamic_token_ids_not_allowed(self):
+        stream_params = self.config.get('stream_params').get(self.name)
+        if stream_params and stream_params.get('ids') and stream_params.get('ids') == '*':
+            raise NotImplementedError("Cannot set dynamic stream to pull all tickers yet.")
+
     @property
     def url_base(self) -> str:
         """Return the API URL root, configurable via tap settings."""

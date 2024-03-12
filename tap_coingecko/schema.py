@@ -135,3 +135,9 @@ COIN_HISTORICAL_DATA_BY_ID_SCHEMA = th.PropertiesList(
     th.Property("developer_data", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})),
     th.Property("public_interest_stats", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]}))
 ).to_dict()
+
+COIN_HISTORICAL_DATA_CHART_BY_ID_SCHEMA = th.PropertiesList(
+    th.Property("timestamp", th.DateTimeType),
+    th.Property("ticker", th.StringType),
+    th.Property("price", th.NumberType)
+).to_dict()
