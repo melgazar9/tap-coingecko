@@ -17,9 +17,15 @@ class CoingeckoStream(RESTStream):
     """coingecko stream class."""
 
     def raise_dynamic_token_ids_not_allowed(self):
-        stream_params = self.config.get('stream_params').get(self.name)
-        if stream_params and stream_params.get('ids') and stream_params.get('ids') == '*':
-            raise NotImplementedError("Cannot set dynamic stream to pull all tickers yet.")
+        stream_params = self.config.get("stream_params").get(self.name)
+        if (
+            stream_params
+            and stream_params.get("ids")
+            and stream_params.get("ids") == "*"
+        ):
+            raise NotImplementedError(
+                "Cannot set dynamic stream to pull all tickers yet."
+            )
 
     @property
     def url_base(self) -> str:
@@ -28,7 +34,7 @@ class CoingeckoStream(RESTStream):
 
     @property
     def endpoint(self) -> str:
-        return f"{self.config.get('api_url')}{self.path}"
+        return f"{self.url_base}{self.path}"
 
     records_jsonpath = "$[*]"
 
@@ -43,10 +49,7 @@ class CoingeckoStream(RESTStream):
             An authenticator instance.
         """
         return APIKeyAuthenticator.create_for_stream(
-            self,
-            key="api-key",
-            value=self.config.get("api_key"),
-            location="header"
+            self, key="api-key", value=self.config.get("api_key"), location="header"
         )
 
     # @property

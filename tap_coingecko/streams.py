@@ -12,6 +12,7 @@ from urllib.parse import urlencode
 from tap_coingecko.schema import *
 from datetime import datetime
 
+
 class CoinListStream(CoingeckoStream):
     """Coingecko Coin-List Stream of Tickers."""
 
@@ -27,14 +28,17 @@ class CoinListStream(CoingeckoStream):
         If pagination is detected, pages will be recursed automatically.
         """
         endpoint = self.endpoint
-        stream_params = self.config.get('stream_params').get(self.name)
+        stream_params = self.config.get("stream_params").get(self.name)
         if stream_params:
             stream_params = urlencode(stream_params)
             endpoint = f"{self.endpoint}?{stream_params}"
 
-        result = requests.get(endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")})
+        result = requests.get(
+            endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")}
+        )
         for record in result.json():
             yield record
+
 
 class SupportedCurrenciesStream(CoingeckoStream):
     """Coingecko Supported Currencies Stream."""
@@ -46,9 +50,12 @@ class SupportedCurrenciesStream(CoingeckoStream):
     schema = SUPPORTED_CURRENCIES_SCHEMA
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
-        result = requests.get(self.endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")})
+        result = requests.get(
+            self.endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")}
+        )
         for record in [{"ticker": value} for value in result.json()]:
             yield record
+
 
 class TopGainersLosersStream(CoingeckoStream):
     """Coingecko Top Gainers / Losers Stream."""
@@ -64,16 +71,18 @@ class TopGainersLosersStream(CoingeckoStream):
         #  Currently this stream only supports USD denominated values.
 
         endpoint = self.endpoint
-        stream_params = self.config.get('stream_params').get(self.name)
+        stream_params = self.config.get("stream_params").get(self.name)
         if stream_params:
             stream_params = urlencode(stream_params)
             endpoint = f"{self.endpoint}?{stream_params}"
 
-        result = requests.get(endpoint, headers={"x-cg-pro-api-key": self.config.get('api_key')})
+        result = requests.get(
+            endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")}
+        )
         result = result.json()
         for key in result.keys():
             for record in result[key]:
-                record['source'] = key
+                record["source"] = key
                 yield record
 
 
@@ -87,9 +96,11 @@ class RecentlyAddedCoinsStream(CoingeckoStream):
     schema = RECENTLY_ADDED_COINS_SCHEMA
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
-        response = requests.get(self.endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")})
+        response = requests.get(
+            self.endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")}
+        )
         for record in response.json():
-            record['activated_at'] = datetime.fromtimestamp(record['activated_at'])
+            record["activated_at"] = datetime.fromtimestamp(record["activated_at"])
             yield record
 
 
@@ -103,7 +114,7 @@ class CoinsListWithMarketDataStream(CoingeckoStream):
     schema = COINS_LIST_WITH_MARKET_DATA_SCHEMA
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
-        stream_params = self.config.get('stream_params').get(self.name)
+        stream_params = self.config.get("stream_params").get(self.name)
         self.raise_dynamic_token_ids_not_allowed()
 
         endpoint = self.endpoint
@@ -111,7 +122,9 @@ class CoinsListWithMarketDataStream(CoingeckoStream):
             stream_params = urlencode(stream_params)
             endpoint = f"{self.endpoint}?{stream_params}"
 
-        response = requests.get(endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")})
+        response = requests.get(
+            endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")}
+        )
         for record in response.json():
             yield record
 
@@ -126,7 +139,7 @@ class CoinDataByIdStream(CoingeckoStream):
     schema = COINS_ID_SCHEMA
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
-        stream_params = self.config.get('stream_params').get(self.name)
+        stream_params = self.config.get("stream_params").get(self.name)
         self.raise_dynamic_token_ids_not_allowed()
 
         endpoint = self.endpoint
@@ -134,11 +147,15 @@ class CoinDataByIdStream(CoingeckoStream):
             encoded_params = urlencode(stream_params)
             endpoint = f"{endpoint}/{stream_params['id']}?{encoded_params}"
 
-        response = requests.get(endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")})
+        response = requests.get(
+            endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")}
+        )
         if response.status_code == 200:
             yield response.json()  # Yield the entire JSON response
         else:
-            self.logger.error(f"Failed to fetch records from {endpoint}. Status code: {response.status_code}")
+            self.logger.error(
+                f"Failed to fetch records from {endpoint}. Status code: {response.status_code}"
+            )
 
 
 class CoinTickersByIdStream(CoingeckoStream):
@@ -151,16 +168,18 @@ class CoinTickersByIdStream(CoingeckoStream):
     schema = COIN_TICKERS_BY_ID_SCHEMA
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
-        stream_params = self.config.get('stream_params').get(self.name)
+        stream_params = self.config.get("stream_params").get(self.name)
         self.raise_dynamic_token_ids_not_allowed()
 
         endpoint = f"{self.endpoint}/{stream_params['id']}/tickers"
         if stream_params:
-            stream_params.pop('id')
+            stream_params.pop("id")
             encoded_params = urlencode(stream_params)
             endpoint = f"{endpoint}?{encoded_params}"
 
-        response = requests.get(endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")})
+        response = requests.get(
+            endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")}
+        )
         yield response.json()
 
 
@@ -174,16 +193,18 @@ class CoinHistoricalDataByIdStream(CoingeckoStream):
     schema = COIN_HISTORICAL_DATA_BY_ID_SCHEMA
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
-        stream_params = self.config.get('stream_params').get(self.name)
+        stream_params = self.config.get("stream_params").get(self.name)
         self.raise_dynamic_token_ids_not_allowed()
 
         endpoint = f"{self.endpoint}/{stream_params['id']}/history"
         if stream_params:
-            stream_params.pop('id')
+            stream_params.pop("id")
             encoded_params = urlencode(stream_params)
             endpoint = f"{endpoint}?{encoded_params}"
 
-        response = requests.get(endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")})
+        response = requests.get(
+            endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")}
+        )
         yield response.json()
 
 
@@ -192,24 +213,72 @@ class CoinHistoricalDataChartByIdStream(CoingeckoStream):
 
     name = "coin_historical_data_chart_by_id"
     path = "/coins"
-    replication_key = None
+    primary_keys = ["timestamp", "symbol"]
+    replication_key = "timestamp"
 
     schema = COIN_HISTORICAL_DATA_CHART_BY_ID_SCHEMA
 
-    def request_records(self, context: dict | None) -> Iterable[dict]:
-        stream_params = self.config.get('stream_params').get(self.name)
-        ticker = stream_params['id']
-        self.raise_dynamic_token_ids_not_allowed()
+    @property
+    def partitions(self):
+        stream_params = self.config.get("stream_params").get(self.name)
+        if "ids" in stream_params.keys():
+            return [
+                {"id": ticker}
+                for ticker in [i.strip() for i in stream_params["ids"].split(",")]
+            ]
+        return []
 
-        endpoint = f"{self.endpoint}/{stream_params['id']}/market_chart"
+    def request_records(self, context: dict | None) -> Iterable[dict]:
+        bookmark = self.get_context_state(context)
+        starting_date = self.get_starting_timestamp(context).date()
+        stream_params = self.config.get("stream_params").get(self.name)
+
+        assert ("id" not in stream_params.keys()) or (
+            "ids" not in stream_params.keys()
+        ), f"Both 'id' and 'ids' cannot be present in meltano.yml stream params for {self.name}"
+
+        if (
+            bookmark
+            and "context" in bookmark.keys()
+            and "id" in bookmark["context"].keys()
+        ):
+            ticker = bookmark["context"]["id"]
+        else:
+            ticker = stream_params["id"]
+
+        endpoint = f"{self.endpoint}/{ticker}/market_chart"
+        if starting_date and "days" in stream_params.keys():
+            stream_params["days"] = min(
+                (datetime.utcnow().date() - starting_date).days, stream_params["days"]
+            )
+        url_params = stream_params.copy()
         if stream_params:
-            stream_params.pop('id')
+            url_params.pop("ids") if "ids" in url_params else url_params.pop("id")
             encoded_params = urlencode(stream_params)
             endpoint = f"{endpoint}?{encoded_params}"
 
-        response = requests.get(endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")})
+        response = requests.get(
+            endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")}
+        )
         result = response.json()
-        result['prices'] = [[datetime.utcfromtimestamp(ts / 1000), price] for ts, price in result['prices']]
-        for record in result['prices']:
-            json_record = {'timestamp': record[0], 'ticker': ticker, 'price': record[1]}
-            yield json_record
+        assert (
+            "error" not in result.keys()
+        ), f"invalid coin passed in meltano.yml: {ticker}"
+        flattened_result = []
+
+        for price, market_cap, volume in zip(
+            result["prices"], result["market_caps"], result["total_volumes"]
+        ):
+            entry = {
+                "timestamp": datetime.utcfromtimestamp(
+                    min(price[0] / 1000, market_cap[0] / 1000, volume[0] / 1000)
+                ),
+                "ticker": ticker,
+                "price": price[1],
+                "market_cap": market_cap[1],
+                "volume": volume[1],
+            }
+            flattened_result.append(entry)
+
+        for record in flattened_result:
+            yield record

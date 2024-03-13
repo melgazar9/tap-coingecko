@@ -9,7 +9,7 @@ from tap_coingecko.tap import TapCoingecko
 SAMPLE_CONFIG = {
     "start_date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d"),
     "api_url": os.getenv("COINGECKO_API_URL"),
-    "api_key": os.getenv("COINGECKO_API_KEY")
+    "api_key": os.getenv("COINGECKO_API_KEY"),
 }
 
 
@@ -18,4 +18,3 @@ TestTapCoingecko = get_tap_test_class(
     tap_class=TapCoingecko,
     config=SAMPLE_CONFIG,
 )
-

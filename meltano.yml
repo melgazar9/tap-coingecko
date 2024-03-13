@@ -54,7 +54,8 @@ plugins:
           localization: "true"
 
         coin_historical_data_chart_by_id:
-          id: solana
+          # can pass a signle id or comma separated ids, but cannot use both
+          ids: solana,bitcoin,bag,ethereum,cardano
           vs_currency: usd
           days: 60
           interval: daily

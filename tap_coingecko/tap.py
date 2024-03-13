@@ -16,8 +16,9 @@ STREAMS = [
     CoinDataByIdStream,
     CoinTickersByIdStream,
     CoinHistoricalDataByIdStream,
-    CoinHistoricalDataChartByIdStream
+    CoinHistoricalDataChartByIdStream,
 ]
+
 
 class TapCoingecko(Tap):
     """coingecko tap class."""
@@ -43,7 +44,7 @@ class TapCoingecko(Tap):
             "start_date",
             th.DateTimeType,
             description="The earliest record date to sync",
-        )
+        ),
     ).to_dict()
 
     def discover_streams(self) -> list[Stream]:
