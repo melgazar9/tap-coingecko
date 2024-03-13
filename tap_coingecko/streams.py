@@ -215,8 +215,19 @@ class CoinHistoricalDataChartByIdStream(CoingeckoStream):
     path = "/coins"
     primary_keys = ["timestamp", "symbol"]
     replication_key = "timestamp"
+    is_sorted = True
 
     schema = COIN_HISTORICAL_DATA_CHART_BY_ID_SCHEMA
+
+    def __init__(
+        self,
+        tap: Tap,
+        name: str | None = None,
+        schema: dict[str, t.Any] | Schema | None = None,
+        path: str | None = None,
+    ):
+        super().__init__(tap, name, schema, path)
+        self.ticker = None
 
     @property
     def partitions(self):
@@ -228,42 +239,50 @@ class CoinHistoricalDataChartByIdStream(CoingeckoStream):
             ]
         return []
 
-    def request_records(self, context: dict | None) -> Iterable[dict]:
-        bookmark = self.get_context_state(context)
-        starting_date = self.get_starting_timestamp(context).date()
+    def get_url(self, context: dict | None) -> str:
+        state = self.get_context_state(context)
+        starting_date = self.get_starting_timestamp(context)
+        if starting_date:
+            starting_date = starting_date.date()
         stream_params = self.config.get("stream_params").get(self.name)
 
         assert ("id" not in stream_params.keys()) or (
             "ids" not in stream_params.keys()
         ), f"Both 'id' and 'ids' cannot be present in meltano.yml stream params for {self.name}"
 
-        if (
-            bookmark
-            and "context" in bookmark.keys()
-            and "id" in bookmark["context"].keys()
-        ):
-            ticker = bookmark["context"]["id"]
+        if state and "context" in state.keys() and "id" in state["context"].keys():
+            self.ticker = state["context"]["id"]
         else:
-            ticker = stream_params["id"]
+            self.ticker = stream_params["id"]
 
-        endpoint = f"{self.endpoint}/{ticker}/market_chart"
         if starting_date and "days" in stream_params.keys():
             stream_params["days"] = min(
                 (datetime.utcnow().date() - starting_date).days, stream_params["days"]
             )
+
         url_params = stream_params.copy()
+
+        url = f"{self.url_base}{self.path}/{self.ticker}/market_chart"
+
         if stream_params:
             url_params.pop("ids") if "ids" in url_params else url_params.pop("id")
-            encoded_params = urlencode(stream_params)
-            endpoint = f"{endpoint}?{encoded_params}"
+            encoded_params = urlencode(url_params)
+            url = f"{url}?{encoded_params}"
 
+        return url
+
+    def request_records(self, context: dict | None) -> Iterable[dict]:
+        url = self.get_url(context)
         response = requests.get(
-            endpoint, headers={"x-cg-pro-api-key": self.config.get("api_key")}
+            url, headers={"x-cg-pro-api-key": self.config.get("api_key")}
         )
+
         result = response.json()
+
         assert (
             "error" not in result.keys()
-        ), f"invalid coin passed in meltano.yml: {ticker}"
+        ), f"invalid coin passed in meltano.yml: {context['id']}"
+
         flattened_result = []
 
         for price, market_cap, volume in zip(
@@ -273,7 +292,7 @@ class CoinHistoricalDataChartByIdStream(CoingeckoStream):
                 "timestamp": datetime.utcfromtimestamp(
                     min(price[0] / 1000, market_cap[0] / 1000, volume[0] / 1000)
                 ),
-                "ticker": ticker,
+                "id": self.ticker,
                 "price": price[1],
                 "market_cap": market_cap[1],
                 "volume": volume[1],

@@ -223,7 +223,7 @@ COIN_HISTORICAL_DATA_BY_ID_SCHEMA = th.PropertiesList(
 
 COIN_HISTORICAL_DATA_CHART_BY_ID_SCHEMA = th.PropertiesList(
     th.Property("timestamp", th.DateTimeType),
-    th.Property("ticker", th.StringType),
+    th.Property("id", th.StringType),
     th.Property("price", th.NumberType),
     th.Property("market_cap", th.NumberType),
     th.Property("volume", th.NumberType),
