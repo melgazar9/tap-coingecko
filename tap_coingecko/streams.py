@@ -12,6 +12,7 @@ from urllib.parse import urlencode
 from tap_coingecko.schema import *
 from datetime import datetime
 
+import pendulum
 
 class CoinListStream(CoingeckoStream):
     """Coingecko Coin-List Stream of Tickers."""
@@ -279,9 +280,7 @@ class CoinHistoricalDataChartByIdStream(CoingeckoStream):
 
         result = response.json()
 
-        assert (
-            "error" not in result.keys()
-        ), f"invalid coin passed in meltano.yml: {context['id']}"
+        assert ("error" not in result.keys()), f"invalid parameter passed in meltano.yml for coin {context['id']}"
 
         flattened_result = []
 
@@ -301,3 +300,93 @@ class CoinHistoricalDataChartByIdStream(CoingeckoStream):
 
         for record in flattened_result:
             yield record
+
+class CoinOHLCChartByIdStream(CoingeckoStream):
+    """Coingecko Historical Data By ID Stream."""
+
+    name = "coin_ohlc_chart_by_id"
+    path = "/coins"
+    replication_key = "timestamp"
+    primary_keys = ["timestamp", "id"]
+    # is_sorted = True  # TODO: set is_sorted true and figure out way to allow timestamps up to <1 day> prior
+    is_timestamp_replication_key = True
+
+    schema = COIN_OHLC_CHART_BY_ID_SCHEMA
+
+    def __init__(
+        self,
+        tap: Tap,
+        name: str | None = None,
+        schema: dict[str, t.Any] | Schema | None = None,
+        path: str | None = None,
+    ):
+        super().__init__(tap, name, schema, path)
+        self.ticker = None
+
+    @property
+    def partitions(self):
+        stream_params = self.config.get("stream_params").get(self.name)
+        if "ids" in stream_params.keys():
+            return [
+                {"id": ticker}
+                for ticker in [i.strip() for i in stream_params["ids"].split(",")]
+            ]
+        return []
+
+    def get_url(self, context: dict | None) -> str:
+        state = self.get_context_state(context)
+        starting_date = self.get_starting_timestamp(context)
+        if starting_date:
+            starting_date = starting_date.date()
+        stream_params = self.config.get("stream_params").get(self.name)
+
+        assert ("id" not in stream_params.keys()) or (
+            "ids" not in stream_params.keys()
+        ), f"Both 'id' and 'ids' cannot be present in meltano.yml stream params for {self.name}"
+
+        if state and "context" in state.keys() and "id" in state["context"].keys():
+            self.ticker = state["context"]["id"]
+        else:
+            self.ticker = stream_params["id"]
+
+        valid_days = [1, 7, 14, 30, 90, 180, 365, "max"]
+        if starting_date and "days" in stream_params.keys():
+            min_day = min(
+                (datetime.utcnow().date() - starting_date).days, stream_params["days"]
+            )
+            closest_valid_day = [day for day in [i for i in valid_days if i != "max"] if day > min_day]
+            if len(closest_valid_day):
+                min_valid_day = min(closest_valid_day)
+            else:
+                min_valid_day = "max"
+            stream_params["days"] = min_valid_day
+
+        url_params = stream_params.copy()
+
+        url = f"{self.url_base}{self.path}/{self.ticker}/ohlc"
+
+        if stream_params:
+            url_params.pop("ids") if "ids" in url_params else url_params.pop("id")
+            encoded_params = urlencode(url_params)
+            url = f"{url}?{encoded_params}"
+
+        return url
+
+    def request_records(self, context: dict | None) -> Iterable[dict]:
+        url = self.get_url(context)
+        response = requests.get(url, headers={"x-cg-pro-api-key": self.config.get("api_key")})
+
+        result = response.json()
+
+        assert isinstance(result, list), f"invalid parameter passed in meltano.yml for coin {context['id']}"
+
+        [r.append(self.ticker) for r in result]
+
+        keys = ["timestamp", "open", "high", "low", "close", "id"]
+        json_data = [dict(zip(keys, values)) for values in result]
+        for record in json_data:
+            yield record
+
+    def post_process(self, row: dict, context: dict | None = None) -> dict | None:
+        row['timestamp'] = datetime.utcfromtimestamp(row['timestamp'] / 1000)
+        return row

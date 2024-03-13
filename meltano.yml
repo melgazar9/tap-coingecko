@@ -49,16 +49,25 @@ plugins:
           depth: "true"
 
         coin_historical_data_by_id:
-          id: ethereum
+          id: bag
           date: "30-01-2019"
           localization: "true"
 
         coin_historical_data_chart_by_id:
-          # can pass a signle id or comma separated ids, but cannot use both
+          # can pass a single id or comma separated ids, but cannot use both
           ids: solana,bitcoin,bag,ethereum,cardano
           vs_currency: usd
           days: 60
           interval: daily
+          precision: full
+
+        coin_ohlc_chart_by_id:
+          # if some parameters are empty, defaults are set automatically: https://docs.coingecko.com/reference/coins-id-ohlc
+          # can pass a single id or comma separated ids, but cannot use both
+          ids: solana,bitcoin,bag
+          vs_currency: usd
+          days: 1
+#          interval: daily
           precision: full
 
     select:

@@ -8,7 +8,7 @@ COIN_LIST_SCHEMA = th.PropertiesList(
         "platforms",
         th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]}),
         description="Platforms for the token address",
-    ),
+    )
 ).to_dict()
 
 
@@ -25,14 +25,14 @@ TOP_GAINERS_LOSERS_SCHEMA = th.PropertiesList(
     th.Property("market_cap_rank", th.NumberType),
     th.Property("usd", th.NumberType),
     th.Property("usd_24h_vol", th.NumberType),
-    th.Property("usd_24h_change", th.NumberType),
+    th.Property("usd_24h_change", th.NumberType)
 ).to_dict()
 
 RECENTLY_ADDED_COINS_SCHEMA = th.PropertiesList(
     th.Property("id", th.StringType),
     th.Property("symbol", th.StringType),
     th.Property("name", th.StringType),
-    th.Property("activated_at", th.DateTimeType),
+    th.Property("activated_at", th.DateTimeType)
 ).to_dict()
 
 
@@ -63,7 +63,7 @@ COINS_LIST_WITH_MARKET_DATA_SCHEMA = th.PropertiesList(
     th.Property(
         "roi", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})
     ),
-    th.Property("last_updated", th.DateTimeType),
+    th.Property("last_updated", th.DateTimeType)
 ).to_dict()
 
 COINS_ID_SCHEMA = th.PropertiesList(
@@ -128,7 +128,7 @@ COINS_ID_SCHEMA = th.PropertiesList(
     th.Property("last_updated", th.DateTimeType),
     th.Property(
         "tickers", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})
-    ),
+    )
 ).to_dict()
 
 COIN_TICKERS_BY_ID_SCHEMA = th.PropertiesList(
@@ -188,7 +188,7 @@ COIN_TICKERS_BY_ID_SCHEMA = th.PropertiesList(
     th.Property("last_updated", th.DateTimeType),
     th.Property(
         "tickers", th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})
-    ),
+    )
 ).to_dict()
 
 
@@ -217,14 +217,24 @@ COIN_HISTORICAL_DATA_BY_ID_SCHEMA = th.PropertiesList(
     ),
     th.Property(
         "public_interest_stats",
-        th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]}),
-    ),
+        th.CustomType({"anyOf": [{"type": "object"}, {"type": "array"}, {}]})
+    )
 ).to_dict()
+
 
 COIN_HISTORICAL_DATA_CHART_BY_ID_SCHEMA = th.PropertiesList(
     th.Property("timestamp", th.DateTimeType),
     th.Property("id", th.StringType),
     th.Property("price", th.NumberType),
     th.Property("market_cap", th.NumberType),
-    th.Property("volume", th.NumberType),
+    th.Property("volume", th.NumberType)
+).to_dict()
+
+COIN_OHLC_CHART_BY_ID_SCHEMA = th.PropertiesList(
+    th.Property("timestamp", th.DateTimeType),
+    th.Property("id", th.StringType),
+    th.Property("open", th.NumberType),
+    th.Property("high", th.NumberType),
+    th.Property("low", th.NumberType),
+    th.Property("close", th.NumberType)
 ).to_dict()
