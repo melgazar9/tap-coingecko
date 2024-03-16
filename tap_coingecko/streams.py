@@ -14,6 +14,7 @@ from datetime import datetime
 
 import pendulum
 
+
 class CoinListStream(CoingeckoStream):
     """Coingecko Coin-List Stream of Tickers."""
 
@@ -280,7 +281,9 @@ class CoinHistoricalDataChartByIdStream(CoingeckoStream):
 
         result = response.json()
 
-        assert ("error" not in result.keys()), f"invalid parameter passed in meltano.yml for coin {context['id']}"
+        assert (
+            "error" not in result.keys()
+        ), f"invalid parameter passed in meltano.yml for coin {context['id']}"
 
         flattened_result = []
 
@@ -301,6 +304,7 @@ class CoinHistoricalDataChartByIdStream(CoingeckoStream):
         for record in flattened_result:
             yield record
 
+
 class CoinOHLCChartByIdStream(CoingeckoStream):
     """Coingecko Historical Data By ID Stream."""
 
@@ -308,7 +312,7 @@ class CoinOHLCChartByIdStream(CoingeckoStream):
     path = "/coins"
     replication_key = "timestamp"
     primary_keys = ["timestamp", "id"]
-    # is_sorted = True  # TODO: set is_sorted true and figure out way to allow timestamps up to <1 day> prior
+    is_sorted = True
     is_timestamp_replication_key = True
 
     schema = COIN_OHLC_CHART_BY_ID_SCHEMA
@@ -354,7 +358,9 @@ class CoinOHLCChartByIdStream(CoingeckoStream):
             min_day = min(
                 (datetime.utcnow().date() - starting_date).days, stream_params["days"]
             )
-            closest_valid_day = [day for day in [i for i in valid_days if i != "max"] if day > min_day]
+            closest_valid_day = [
+                day for day in [i for i in valid_days if i != "max"] if day > min_day
+            ]
             if len(closest_valid_day):
                 min_valid_day = min(closest_valid_day)
             else:
@@ -372,21 +378,34 @@ class CoinOHLCChartByIdStream(CoingeckoStream):
 
         return url
 
-    def request_records(self, context: dict | None) -> Iterable[dict]:
-        url = self.get_url(context)
-        response = requests.get(url, headers={"x-cg-pro-api-key": self.config.get("api_key")})
-
+    def parse_response(self, response):
         result = response.json()
-
-        assert isinstance(result, list), f"invalid parameter passed in meltano.yml for coin {context['id']}"
+        assert isinstance(
+            result, list
+        ), f"invalid parameter passed in meltano.yml for coin {context['id']}"
 
         [r.append(self.ticker) for r in result]
 
         keys = ["timestamp", "open", "high", "low", "close", "id"]
-        json_data = [dict(zip(keys, values)) for values in result]
-        for record in json_data:
-            yield record
+        data = [dict(zip(keys, values)) for values in result]
+        data = [
+            {**entry, "timestamp": datetime.utcfromtimestamp(entry["timestamp"] / 1000)}
+            for entry in data
+        ]
 
-    def post_process(self, row: dict, context: dict | None = None) -> dict | None:
-        row['timestamp'] = datetime.utcfromtimestamp(row['timestamp'] / 1000)
-        return row
+        return data
+
+    def request_records(self, context: dict | None) -> Iterable[dict]:
+        url = self.get_url(context)
+        response = requests.get(
+            url, headers={"x-cg-pro-api-key": self.config.get("api_key")}
+        )
+
+        result = self.parse_response(response)
+
+        latest_replication_timestamp = datetime.strptime(
+            self.get_starting_replication_key_value(context), "%Y-%m-%dT%H:%M:%S%z"
+        ).replace(tzinfo=None)
+        for record in result:
+            if record["timestamp"] >= latest_replication_timestamp:
+                yield record
