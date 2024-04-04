@@ -48,7 +48,7 @@ plugins:
           sparkline: "true"
 
         coin_tickers_by_id:
-          ids: "*"
+          ids: bitcoin,solana
           include_exchange_logo: "true"
           depth: "true"
 

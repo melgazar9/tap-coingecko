@@ -14,7 +14,7 @@ STREAMS = [
     RecentlyAddedCoinsStream,
     CoinsListWithMarketDataStream,
     CoinDataByIdStream,
-    # CoinTickersByIdStream,
+    CoinTickersByIdStream,
     CoinHistoricalDataByIdStream,
     CoinHistoricalDataChartByIdStream,
     CoinOHLCChartByIdStream,
