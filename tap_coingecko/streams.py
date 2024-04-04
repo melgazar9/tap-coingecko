@@ -6,7 +6,7 @@ import sys
 import typing as t
 import requests
 from singer_sdk import typing as th
-from tap_coingecko.client import CoingeckoStream
+from tap_coingecko.client import CoingeckoStream, DynamicIDCoingeckoStream
 import importlib.resources as importlib_resources
 from urllib.parse import urlencode
 from tap_coingecko.schema import *
@@ -182,45 +182,12 @@ class CoinsListWithMarketDataStream(CoingeckoStream):
             yield record
 
 
-class CoinDataByIdStream(CoingeckoStream):
+class CoinDataByIdStream(DynamicIDCoingeckoStream):
     """Coingecko Recently Added Coins Stream."""
 
     name = "coin_data_by_id"
     path = "/coins"
     replication_key = None
-
-    # schema = COIN_ID_SCHEMA
-
-    def __init__(
-        self,
-        tap: Tap,
-        name: str | None = None,
-        schema: dict[str, t.Any] | Schema | None = None,
-        path: str | None = None,
-    ):
-        super().__init__(tap, name, schema, path)
-        self.ticker = None
-        self.stream_params = self.config.get("stream_params").get(self.name)
-
-        assert ("id" not in self.stream_params.keys()) or (
-            "ids" not in self.stream_params.keys()
-        ), f"Both 'id' and 'ids' cannot be present in meltano.yml stream params for {self.name}"
-
-        self.multi_tickers = False
-        if "ids" in self.stream_params.keys():
-            self.multi_tickers = True
-
-        self.dynamic_ticker_stream = False
-        if "ids" in self.stream_params and self.stream_params["ids"] == "*":
-            self.dynamic_ticker_stream = True
-
-        if self.dynamic_ticker_stream:
-            coin_list_endpoint = "https://pro-api.coingecko.com/api/v3/coins/list"
-            response = requests.get(
-                coin_list_endpoint,
-                headers={"x-cg-pro-api-key": self.config.get("api_key")},
-            )
-            self.all_tickers = response.json()
 
     @property
     def schema(self):
@@ -284,21 +251,6 @@ class CoinDataByIdStream(CoingeckoStream):
     def schema(self, value):
         self._schema = value
 
-    @property
-    def partitions(self):
-        if self.multi_tickers:
-            if self.stream_params["ids"] != "*":
-                return [
-                    {"id": ticker}
-                    for ticker in [
-                        i.strip() for i in self.stream_params["ids"].split(",")
-                    ]
-                ]
-            elif self.stream_params["ids"] == "*":
-                return [{"id": t["id"]} for t in self.all_tickers]
-            else:
-                raise ValueError("Could not set a proper partition.")
-
     def get_url(self, context: dict | None) -> str:
         state = self.get_context_state(context)
         starting_date = self.get_starting_timestamp(context)
@@ -339,55 +291,18 @@ class CoinDataByIdStream(CoingeckoStream):
         row: dict,
         context: dict | None = None,  # noqa: ARG002
     ) -> dict | None:
-        # Need to convert fully_diluted_valuation to str since some loaders try to parse an integer that exceeds
-        # the maximum size(e.g. overflow Int64 error)
-        # for k, v in row["market_data"]["fully_diluted_valuation"].items():
-        #     row["market_data"]["fully_diluted_valuation"][k] = str(
-        #         row["market_data"]["fully_diluted_valuation"][k]
-        #     )
         row["tickers"] = str(row["tickers"])
         return row
 
 
-class CoinTickersByIdStream(CoingeckoStream):
+class CoinTickersByIdStream(DynamicIDCoingeckoStream):
     """Coingecko Tickers By Id Stream."""
 
-    # TODO: Implement Pagination
+    # TODO: This is not done. Need to implement pagination.
 
     name = "coin_tickers_by_id"
     path = "/coins"
     replication_key = None
-
-    def __init__(
-        self,
-        tap: Tap,
-        name: str | None = None,
-        schema: dict[str, t.Any] | Schema | None = None,
-        path: str | None = None,
-    ):
-        super().__init__(tap, name, schema, path)
-        self.ticker = None
-        self.stream_params = self.config.get("stream_params").get(self.name)
-
-        assert ("id" not in self.stream_params.keys()) or (
-            "ids" not in self.stream_params.keys()
-        ), f"Both 'id' and 'ids' cannot be present in meltano.yml stream params for {self.name}"
-
-        self.multi_tickers = False
-        if "ids" in self.stream_params.keys():
-            self.multi_tickers = True
-
-        self.dynamic_ticker_stream = False
-        if "ids" in self.stream_params and self.stream_params["ids"] == "*":
-            self.dynamic_ticker_stream = True
-
-        if self.dynamic_ticker_stream:
-            coin_list_endpoint = "https://pro-api.coingecko.com/api/v3/coins/list"
-            response = requests.get(
-                coin_list_endpoint,
-                headers={"x-cg-pro-api-key": self.config.get("api_key")},
-            )
-            self.all_tickers = response.json()
 
     @property
     def schema(self):
@@ -401,21 +316,6 @@ class CoinTickersByIdStream(CoingeckoStream):
     @schema.setter
     def schema(self, value):
         self._schema = value
-
-    @property
-    def partitions(self):
-        if self.multi_tickers:
-            if self.stream_params["ids"] != "*":
-                return [
-                    {"id": ticker}
-                    for ticker in [
-                        i.strip() for i in self.stream_params["ids"].split(",")
-                    ]
-                ]
-            elif self.stream_params["ids"] == "*":
-                return [{"id": t["id"]} for t in self.all_tickers]
-            else:
-                raise ValueError("Could not set a proper partition.")
 
     def get_url(self, context: dict | None) -> str:
         state = self.get_context_state(context)
@@ -517,7 +417,7 @@ class CoinHistoricalDataByIdStream(CoingeckoStream):
         yield response.json()
 
 
-class CoinHistoricalDataChartByIdStream(CoingeckoStream):
+class CoinHistoricalDataChartByIdStream(DynamicIDCoingeckoStream):
     """Coingecko Historical Data By ID Stream."""
 
     name = "coin_historical_data_chart_by_id"
@@ -527,52 +427,6 @@ class CoinHistoricalDataChartByIdStream(CoingeckoStream):
     is_sorted = True
 
     schema = COIN_HISTORICAL_DATA_CHART_BY_ID_SCHEMA
-
-    def __init__(
-            self,
-            tap: Tap,
-            name: str | None = None,
-            schema: dict[str, t.Any] | Schema | None = None,
-            path: str | None = None,
-    ):
-        super().__init__(tap, name, schema, path)
-        self.ticker = None
-        self.stream_params = self.config.get("stream_params").get(self.name)
-
-        assert ("id" not in self.stream_params.keys()) or (
-                "ids" not in self.stream_params.keys()
-        ), f"Both 'id' and 'ids' cannot be present in meltano.yml stream params for {self.name}"
-
-        self.multi_tickers = False
-        if "ids" in self.stream_params.keys():
-            self.multi_tickers = True
-
-        self.dynamic_ticker_stream = False
-        if "ids" in self.stream_params and self.stream_params["ids"] == "*":
-            self.dynamic_ticker_stream = True
-
-        if self.dynamic_ticker_stream:
-            coin_list_endpoint = "https://pro-api.coingecko.com/api/v3/coins/list"
-            response = requests.get(
-                coin_list_endpoint,
-                headers={"x-cg-pro-api-key": self.config.get("api_key")},
-            )
-            self.all_tickers = response.json()
-
-    @property
-    def partitions(self):
-        if self.multi_tickers:
-            if self.stream_params["ids"] != "*":
-                return [
-                    {"id": ticker}
-                    for ticker in [
-                        i.strip() for i in self.stream_params["ids"].split(",")
-                    ]
-                ]
-            elif self.stream_params["ids"] == "*":
-                return [{"id": t["id"]} for t in self.all_tickers]
-            else:
-                raise ValueError("Could not set a proper partition.")
 
     def get_url(self, context: dict | None) -> str:
         state = self.get_context_state(context)
@@ -634,7 +488,7 @@ class CoinHistoricalDataChartByIdStream(CoingeckoStream):
             yield entry
 
 
-class CoinOHLCChartByIdStream(CoingeckoStream):
+class CoinOHLCChartByIdStream(DynamicIDCoingeckoStream):
     """Coingecko Historical Data By ID Stream."""
 
     name = "coin_ohlc_chart_by_id"
@@ -645,27 +499,6 @@ class CoinOHLCChartByIdStream(CoingeckoStream):
     is_timestamp_replication_key = True
 
     schema = COIN_OHLC_CHART_BY_ID_SCHEMA
-
-    def __init__(
-        self,
-        tap: Tap,
-        name: str | None = None,
-        schema: dict[str, t.Any] | Schema | None = None,
-        path: str | None = None,
-    ):
-        super().__init__(tap, name, schema, path)
-        self.ticker = None
-
-    @property
-    def partitions(self):
-        stream_params = self.config.get("stream_params").get(self.name)
-        if "ids" in stream_params.keys():
-            return [
-                {"id": ticker}
-                for ticker in [i.strip() for i in stream_params["ids"].split(",")]
-            ]
-        else:
-            raise ValueError("Could not set a proper partition.")
 
     def get_url(self, context: dict | None) -> str:
         state = self.get_context_state(context)
