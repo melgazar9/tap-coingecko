@@ -40,11 +40,15 @@ plugins:
           price_change_percentage: "7d"
 
         coin_data_by_id:
-          id: bag
+          ids: cardano,fantom
+          tickers: "true"
+          market_data: "true"
+          community_data: "true"
+          developer_data: "true"
           sparkline: "true"
 
         coin_tickers_by_id:
-          id: ethereum
+          ids: "*"
           include_exchange_logo: "true"
           depth: "true"
 
