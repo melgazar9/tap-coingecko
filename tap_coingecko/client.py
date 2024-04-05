@@ -52,6 +52,7 @@ class CoingeckoStream(RESTStream):
             self, key="api-key", value=self.config.get("api_key"), location="header"
         )
 
+
 class DynamicIDCoingeckoStream(CoingeckoStream):
     def __init__(
         self,

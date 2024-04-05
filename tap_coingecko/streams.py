@@ -9,8 +9,14 @@ from singer_sdk import typing as th
 from tap_coingecko.client import CoingeckoStream, DynamicIDCoingeckoStream
 import importlib.resources as importlib_resources
 from urllib.parse import urlencode
-from tap_coingecko.schema import *
 from datetime import datetime
+from singer_sdk import typing as th
+
+CUSTOM_JSON_SCHEMA = {
+    "additionalProperties": True,
+    "description": "Custom JSON typing.",
+    "type": ["object", "null"],
+}
 
 
 class CoinListStream(CoingeckoStream):
@@ -20,22 +26,16 @@ class CoinListStream(CoingeckoStream):
     path = "/coins/list"
     replication_key = None
 
-    @property
-    def schema(self):
-        schema = th.PropertiesList(
-            th.Property("id", th.StringType, description="Coingecko ticker ID"),
-            th.Property(
-                "symbol", th.StringType, description="Coingecko symbol / ticker"
-            ),
-            th.Property("name", th.StringType, description="Coingecko product name"),
-        ).to_dict()
-
-        schema["properties"]["platforms"] = CUSTOM_JSON_SCHEMA
-        return schema
-
-    @schema.setter
-    def schema(self, value):
-        self._schema = value
+    schema = th.PropertiesList(
+        th.Property("id", th.StringType, description="Coingecko ticker ID"),
+        th.Property("symbol", th.StringType, description="Coingecko symbol / ticker"),
+        th.Property("name", th.StringType, description="Coingecko product name"),
+        th.Property(
+            "platforms",
+            th.CustomType(CUSTOM_JSON_SCHEMA),
+            description="Coingecko platforms",
+        ),
+    ).to_dict()
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
         """
@@ -62,7 +62,7 @@ class SupportedCurrenciesStream(CoingeckoStream):
     path = "/simple/supported_vs_currencies"
     replication_key = None
 
-    schema = SUPPORTED_CURRENCIES_SCHEMA
+    schema = th.PropertiesList(th.Property("ticker", th.StringType)).to_dict()
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
         result = requests.get(
@@ -79,7 +79,17 @@ class TopGainersLosersStream(CoingeckoStream):
     path = "/coins/top_gainers_losers"
     replication_key = None
 
-    schema = TOP_GAINERS_LOSERS_SCHEMA
+    schema = th.PropertiesList(
+        th.Property("id", th.StringType),
+        th.Property("source", th.StringType),
+        th.Property("symbol", th.StringType),
+        th.Property("name", th.StringType),
+        th.Property("image", th.StringType),
+        th.Property("market_cap_rank", th.NumberType),
+        th.Property("usd", th.NumberType),
+        th.Property("usd_24h_vol", th.NumberType),
+        th.Property("usd_24h_change", th.NumberType),
+    ).to_dict()
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
         # TODO: Create dynamic schema to account for endpoint parameters in meltano.yml.
@@ -108,7 +118,12 @@ class RecentlyAddedCoinsStream(CoingeckoStream):
     path = "/coins/list/new"
     replication_key = None
 
-    schema = RECENTLY_ADDED_COINS_SCHEMA
+    schema = th.PropertiesList(
+        th.Property("id", th.StringType),
+        th.Property("symbol", th.StringType),
+        th.Property("name", th.StringType),
+        th.Property("activated_at", th.DateTimeType),
+    ).to_dict()
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
         response = requests.get(
@@ -122,49 +137,41 @@ class RecentlyAddedCoinsStream(CoingeckoStream):
 class CoinsListWithMarketDataStream(CoingeckoStream):
     """Coingecko Recently Added Coins Stream."""
 
+    # TODO: Need to implement pagination.
+
     name = "coins_list_with_market_data"
     path = "/coins/markets"
     replication_key = None
 
-    @property
-    def schema(self):
-        schema = th.PropertiesList(
-            th.Property("id", th.StringType),
-            th.Property("symbol", th.StringType),
-            th.Property("name", th.StringType),
-            th.Property("image", th.StringType),
-            th.Property("current_price", th.NumberType),
-            th.Property("market_cap", th.NumberType),
-            th.Property("market_cap_rank", th.NumberType),
-            th.Property("fully_diluted_valuation", th.NumberType),
-            th.Property("total_volume", th.NumberType),
-            th.Property("high_24h", th.NumberType),
-            th.Property("low_24h", th.NumberType),
-            th.Property("price_change_24h", th.NumberType),
-            th.Property("price_change_percentage_24h", th.NumberType),
-            th.Property("market_cap_change_24h", th.NumberType),
-            th.Property("market_cap_change_percentage_24h", th.NumberType),
-            th.Property("price_change_percentage_7d_in_currency", th.NumberType),
-            th.Property("circulating_supply", th.NumberType),
-            th.Property("total_supply", th.NumberType),
-            th.Property("max_supply", th.NumberType),
-            th.Property("ath", th.NumberType),
-            th.Property("ath_change_percentage", th.NumberType),
-            th.Property("atl", th.NumberType),
-            th.Property("atl_change_percentage", th.NumberType),
-            th.Property("atl_date", th.DateTimeType),
-            th.Property("ath_date", th.DateTimeType),
-            th.Property("roi", th.AnyType()),
-            th.Property("last_updated", th.DateTimeType),
-        ).to_dict()
-
-        schema["properties"]["roi"] = CUSTOM_JSON_SCHEMA
-
-        return schema
-
-    @schema.setter
-    def schema(self, value):
-        self._schema = value
+    schema = th.PropertiesList(
+        th.Property("id", th.StringType),
+        th.Property("symbol", th.StringType),
+        th.Property("name", th.StringType),
+        th.Property("image", th.StringType),
+        th.Property("current_price", th.NumberType),
+        th.Property("market_cap", th.NumberType),
+        th.Property("market_cap_rank", th.NumberType),
+        th.Property("fully_diluted_valuation", th.NumberType),
+        th.Property("total_volume", th.NumberType),
+        th.Property("high_24h", th.NumberType),
+        th.Property("low_24h", th.NumberType),
+        th.Property("price_change_24h", th.NumberType),
+        th.Property("price_change_percentage_24h", th.NumberType),
+        th.Property("market_cap_change_24h", th.NumberType),
+        th.Property("market_cap_change_percentage_24h", th.NumberType),
+        th.Property("price_change_percentage_7d_in_currency", th.NumberType),
+        th.Property("circulating_supply", th.NumberType),
+        th.Property("total_supply", th.NumberType),
+        th.Property("max_supply", th.NumberType),
+        th.Property("ath", th.NumberType),
+        th.Property("ath_change_percentage", th.NumberType),
+        th.Property("atl", th.NumberType),
+        th.Property("atl_change_percentage", th.NumberType),
+        th.Property("atl_date", th.DateTimeType),
+        th.Property("ath_date", th.DateTimeType),
+        th.Property("last_updated", th.DateTimeType),
+        th.Property("roi", th.CustomType(CUSTOM_JSON_SCHEMA)),
+    ).to_dict()
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
         stream_params = self.config.get("stream_params").get(self.name)
@@ -189,67 +196,54 @@ class CoinDataByIdStream(DynamicIDCoingeckoStream):
     path = "/coins"
     replication_key = None
 
-    @property
-    def schema(self):
-        self._schema = th.PropertiesList(
-            th.Property("id", th.StringType),
-            th.Property("symbol", th.StringType),
-            th.Property("name", th.StringType),
-            th.Property("web_slug", th.StringType),
-            th.Property("asset_platform_id", th.StringType),
-            th.Property("block_time_in_minutes", th.NumberType),
-            th.Property("hashing_algorithm", th.StringType),
-            th.Property("categories", th.ArrayType(th.StringType)),
-            th.Property("preview_listing", th.BooleanType),
-            th.Property("public_notice", th.StringType),
-            th.Property("additional_notices", th.ArrayType(th.StringType)),
-            th.Property("country_origin", th.StringType),
-            th.Property("genesis_date", th.StringType),
-            th.Property("contract_address", th.StringType),
-            th.Property("sentiment_votes_up_percentage", th.NumberType),
-            th.Property("sentiment_votes_down_percentage", th.NumberType),
-            th.Property("watchlist_portfolio_users", th.NumberType),
-            th.Property("market_cap_rank", th.NumberType),
-            th.Property(
-                "status_updates",
-                th.ArrayType(
-                    th.CustomType(
-                        {
-                            "anyOf": [
-                                {"type": "object"},
-                                {"type": "array"},
-                                {"type": "null"},
-                                {},
-                                [{}],
-                            ]
-                        }
-                    )
-                ),
+    schema = th.PropertiesList(
+        th.Property("id", th.StringType),
+        th.Property("symbol", th.StringType),
+        th.Property("name", th.StringType),
+        th.Property("web_slug", th.StringType),
+        th.Property("asset_platform_id", th.StringType),
+        th.Property("block_time_in_minutes", th.NumberType),
+        th.Property("hashing_algorithm", th.StringType),
+        th.Property("categories", th.ArrayType(th.StringType)),
+        th.Property("preview_listing", th.BooleanType),
+        th.Property("public_notice", th.StringType),
+        th.Property("additional_notices", th.ArrayType(th.StringType)),
+        th.Property("country_origin", th.StringType),
+        th.Property("genesis_date", th.StringType),
+        th.Property("contract_address", th.StringType),
+        th.Property("sentiment_votes_up_percentage", th.NumberType),
+        th.Property("sentiment_votes_down_percentage", th.NumberType),
+        th.Property("watchlist_portfolio_users", th.NumberType),
+        th.Property("market_cap_rank", th.NumberType),
+        th.Property("last_updated", th.DateTimeType),
+        th.Property("tickers", th.StringType),
+        th.Property("platforms", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("detail_platforms", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("localization", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("description", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("links", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("image", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("market_data", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("community_data", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("developer_data", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("ico_data", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property(
+            "status_updates",
+            th.ArrayType(
+                th.CustomType(
+                    {
+                        "anyOf": [
+                            {"type": "object"},
+                            {"type": "array"},
+                            {"type": "null"},
+                            {},
+                            [{}],
+                        ]
+                    }
+                )
             ),
-            th.Property("last_updated", th.DateTimeType),
-            th.Property("tickers", th.StringType),
-        ).to_dict()
-
-        json_fields = (
-            "platforms",
-            "detail_platforms",
-            "localization",
-            "description",
-            "links",
-            "image",
-            "market_data",
-            "community_data",
-            "developer_data",
-            "ico_data",
-        )
-
-        for field in json_fields:
-            self._schema["properties"][field] = CUSTOM_JSON_SCHEMA
-        return self._schema
-
-    @schema.setter
-    def schema(self, value):
-        self._schema = value
+        ),
+    ).to_dict()
 
     def get_url(self, context: dict | None) -> str:
         state = self.get_context_state(context)
@@ -298,24 +292,17 @@ class CoinDataByIdStream(DynamicIDCoingeckoStream):
 class CoinTickersByIdStream(DynamicIDCoingeckoStream):
     """Coingecko Tickers By Id Stream."""
 
-    # TODO: This is not done. Need to implement pagination.
+    # TODO: Need to implement pagination.
 
     name = "coin_tickers_by_id"
     path = "/coins"
     replication_key = None
 
-    @property
-    def schema(self):
-        schema = th.PropertiesList(
-            th.Property("name", th.StringType),
-            th.Property("id", th.StringType),
-            th.Property("tickers", th.StringType),
-        ).to_dict()
-        return schema
-
-    @schema.setter
-    def schema(self, value):
-        self._schema = value
+    schema = th.PropertiesList(
+        th.Property("name", th.StringType),
+        th.Property("id", th.StringType),
+        th.Property("tickers", th.StringType),
+    ).to_dict()
 
     def get_url(self, context: dict | None) -> str:
         state = self.get_context_state(context)
@@ -370,37 +357,18 @@ class CoinHistoricalDataByIdStream(CoingeckoStream):
     path = "/coins"
     replication_key = None
 
-    @property
-    def schema(self):
-        self._schema = th.PropertiesList(
-            th.Property("id", th.StringType),
-            th.Property("symbol", th.StringType),
-            th.Property("name", th.StringType),
-            th.Property("localization", th.AnyType()),
-            th.Property("image", th.AnyType()),
-            th.Property("market_data", th.AnyType()),
-            th.Property("community_data", th.AnyType()),
-            th.Property("developer_data", th.AnyType()),
-            th.Property("public_interest_stats", th.AnyType()),
-        ).to_dict()
-
-        json_fields = (
-            "localization",
-            "image",
-            "market_data",
-            "community_data",
-            "developer_data",
-            "public_interest_stats",
-        )
-
-        for field in json_fields:
-            self._schema["properties"][field] = CUSTOM_JSON_SCHEMA
-
-        return self._schema
-
-    @schema.setter
-    def schema(self, value):
-        self._schema = value
+    schema = th.PropertiesList(
+        th.Property("id", th.StringType),
+        th.Property("symbol", th.StringType),
+        th.Property("name", th.StringType),
+        th.Property("ico_data", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("localization", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("image", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("market_data", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("community_data", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("developer_data", th.CustomType(CUSTOM_JSON_SCHEMA)),
+        th.Property("public_interest_stats", th.CustomType(CUSTOM_JSON_SCHEMA)),
+    ).to_dict()
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
         self.stream_params = self.config.get("stream_params").get(self.name)
@@ -426,7 +394,13 @@ class CoinHistoricalDataChartByIdStream(DynamicIDCoingeckoStream):
     replication_key = "timestamp"
     is_sorted = True
 
-    schema = COIN_HISTORICAL_DATA_CHART_BY_ID_SCHEMA
+    schema = th.PropertiesList(
+        th.Property("timestamp", th.DateTimeType),
+        th.Property("id", th.StringType),
+        th.Property("price", th.NumberType),
+        th.Property("market_cap", th.NumberType),
+        th.Property("volume", th.NumberType),
+    ).to_dict()
 
     def get_url(self, context: dict | None) -> str:
         state = self.get_context_state(context)
@@ -498,7 +472,14 @@ class CoinOHLCChartByIdStream(DynamicIDCoingeckoStream):
     is_sorted = True
     is_timestamp_replication_key = True
 
-    schema = COIN_OHLC_CHART_BY_ID_SCHEMA
+    schema = th.PropertiesList(
+        th.Property("timestamp", th.DateTimeType),
+        th.Property("id", th.StringType),
+        th.Property("open", th.NumberType),
+        th.Property("high", th.NumberType),
+        th.Property("low", th.NumberType),
+        th.Property("close", th.NumberType),
+    ).to_dict()
 
     def get_url(self, context: dict | None) -> str:
         state = self.get_context_state(context)
