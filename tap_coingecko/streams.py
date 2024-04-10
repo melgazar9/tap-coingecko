@@ -237,7 +237,6 @@ class CoinDataByIdStream(DynamicIDCoingeckoStream):
                             {"type": "array"},
                             {"type": "null"},
                             {},
-                            [{}],
                         ]
                     }
                 )
@@ -382,7 +381,7 @@ class CoinHistoricalDataChartByIdStream(DynamicIDCoingeckoStream):
 
     name = None
     path = "/coins"
-    primary_keys = ["timestamp", "symbol"]
+    primary_keys = ["timestamp", "id"]
     replication_key = "timestamp"
     is_sorted = True
 
