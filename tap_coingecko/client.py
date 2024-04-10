@@ -99,3 +99,5 @@ class DynamicIDCoingeckoStream(CoingeckoStream):
                 return [{"id": t["id"]} for t in self.all_tickers]
             else:
                 raise ValueError("Could not set a proper partition.")
+        else:
+            return [{"id": self.stream_params.get("id")}]

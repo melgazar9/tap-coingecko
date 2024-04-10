@@ -16,7 +16,9 @@ STREAMS = [
     CoinDataByIdStream,
     CoinTickersByIdStream,
     CoinHistoricalDataByIdStream,
-    CoinHistoricalDataChartByIdStream,
+    CoinHistoricalDataChartByIdStreamDaily,
+    CoinHistoricalDataChartByIdStreamHourly,
+    CoinHistoricalDataChartByIdStream5m,
     CoinOHLCChartByIdStream,
 ]
 

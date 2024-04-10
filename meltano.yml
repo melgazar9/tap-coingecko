@@ -24,6 +24,7 @@ plugins:
     config:
       start_date: '2010-01-01T00:00:00Z'
       api_key: ${COINGECKO_API_KEY}
+      subscription_level: enterprise
 
       stream_params:
         coin_list:
@@ -57,12 +58,28 @@ plugins:
           date: "30-01-2019"
           localization: "true"
 
-        coin_historical_data_chart_by_id:
+        coin_historical_data_chart_by_id_daily:
           # can pass a single id or comma separated ids, but cannot use both
           ids: solana,bitcoin,bag,ethereum,cardano
           vs_currency: usd
-          days: 60
+          days: 1000
           interval: daily
+          precision: full
+
+        coin_historical_data_chart_by_id_hourly:
+          # can pass a single id or comma separated ids, but cannot use both
+          ids: bag,nano,cardano
+          vs_currency: usd
+          days: 90
+          interval: hourly
+          precision: full
+
+        coin_historical_data_chart_by_id_5m:
+          # can pass a single id or comma separated ids, but cannot use both
+          ids: solana,bitcoin,nano
+          vs_currency: usd
+          days: 10
+          interval: 5m
           precision: full
 
         coin_ohlc_chart_by_id:
