@@ -20,6 +20,7 @@ STREAMS = [
     CoinHistoricalDataChartByIdStreamHourly,
     CoinHistoricalDataChartByIdStream5m,
     CoinOHLCChartByIdStream,
+    CoinCirculatingSupplyChartByIdStream,
 ]
 
 

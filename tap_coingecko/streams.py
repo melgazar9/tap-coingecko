@@ -43,7 +43,7 @@ class CoinListStream(CoingeckoStream):
         If pagination is detected, pages will be recursed automatically.
         """
         endpoint = self.endpoint
-        stream_params = self.config.get("stream_params").get(self.name)
+        stream_params = self.config.get("stream_params").get(self.name).copy()
         if stream_params:
             stream_params = urlencode(stream_params)
             endpoint = f"{self.endpoint}?{stream_params}"
@@ -96,7 +96,7 @@ class TopGainersLosersStream(CoingeckoStream):
         #  Currently this stream only supports USD denominated values. May be out of scope.
 
         endpoint = self.endpoint
-        stream_params = self.config.get("stream_params").get(self.name)
+        stream_params = self.config.get("stream_params").get(self.name).copy()
         if stream_params:
             stream_params = urlencode(stream_params)
             endpoint = f"{self.endpoint}?{stream_params}"
@@ -174,7 +174,7 @@ class CoinsListWithMarketDataStream(CoingeckoStream):
     ).to_dict()
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
-        stream_params = self.config.get("stream_params").get(self.name)
+        stream_params = self.config.get("stream_params").get(self.name).copy()
         self.raise_dynamic_token_ids_not_allowed()
 
         endpoint = self.endpoint
@@ -362,7 +362,7 @@ class CoinHistoricalDataByIdStream(CoingeckoStream):
     ).to_dict()
 
     def request_records(self, context: dict | None) -> Iterable[dict]:
-        self.stream_params = self.config.get("stream_params").get(self.name)
+        self.stream_params = self.config.get("stream_params").get(self.name).copy()
         self.raise_dynamic_token_ids_not_allowed()
 
         endpoint = f"{self.endpoint}/{self.stream_params['id']}/history"
@@ -394,14 +394,10 @@ class CoinHistoricalDataChartByIdStream(DynamicIDCoingeckoStream):
     ).to_dict()
 
     def raise_coingecko_non_enterprise_warning(self):
-        if (
-            self.config.get("subscription_level").lower() != "enterprise"
-            and self.multi_intervals
-        ):
-            # if running multi_intervals and subscription_level is not enterprise then get the maximum number of records
+        if self.config.get("subscription_level").lower() != "enterprise":
             self.logger.warning(
                 f"""
-                Coingecko API requests across multiple intervals for non-enterprise plans => Default settings may change.
+                Coingecko API requests for non-enterprise plans => Default settings may change.
                 days: {self.stream_params.get('days')} will default to being empty.
                 For endpoint coin-historical-chart-by-id (coins-id-market-chart):
                     For 5m intervals maximum allowed time is 1 day.
@@ -494,10 +490,6 @@ class CoinHistoricalDataChartByIdStream(DynamicIDCoingeckoStream):
             starting_date = starting_date.date()
         stream_params = self.config.get("stream_params").get(self.name).copy()
 
-        assert ("id" not in stream_params.keys()) or (
-            "ids" not in stream_params.keys()
-        ), f"Both 'id' and 'ids' cannot be present in meltano.yml stream params for {self.name}"
-
         if state and "context" in state.keys() and "id" in state["context"].keys():
             self.ticker = state.get("context").get("id")
         else:
@@ -507,9 +499,13 @@ class CoinHistoricalDataChartByIdStream(DynamicIDCoingeckoStream):
             stream_params["days"] = min(
                 (datetime.utcnow().date() - starting_date).days, stream_params["days"]
             )
+            if (
+                subscription_params["days"] == "max"
+                or subscription_params["days"] > stream_params["days"]
+            ):
+                stream_params["days"] = subscription_params["days"]
 
         url_params = stream_params.copy()
-
         url = f"{self.url_base}{self.path}/{self.ticker}/market_chart"
 
         if stream_params:
@@ -560,7 +556,7 @@ class CoinHistoricalDataChartByIdStreamDaily(CoinHistoricalDataChartByIdStream):
 
 
 class CoinOHLCChartByIdStream(DynamicIDCoingeckoStream):
-    """Coingecko Historical Data By ID Stream."""
+    """Coingecko Historical Data By ID Parent Stream."""
 
     name = "coin_ohlc_chart_by_id"
     path = "/coins"
@@ -583,11 +579,7 @@ class CoinOHLCChartByIdStream(DynamicIDCoingeckoStream):
         starting_date = self.get_starting_timestamp(context)
         if starting_date:
             starting_date = starting_date.date()
-        stream_params = self.config.get("stream_params").get(self.name)
-
-        assert ("id" not in stream_params.keys()) or (
-            "ids" not in stream_params.keys()
-        ), f"Both 'id' and 'ids' cannot be present in meltano.yml stream params for {self.name}"
+        stream_params = self.config.get("stream_params").get(self.name).copy()
 
         if state and "context" in state.keys() and "id" in state["context"].keys():
             self.ticker = state["context"]["id"]
@@ -648,5 +640,118 @@ class CoinOHLCChartByIdStream(DynamicIDCoingeckoStream):
             self.get_starting_replication_key_value(context), "%Y-%m-%dT%H:%M:%S%z"
         ).replace(tzinfo=None)
         for record in result:
+            if record["timestamp"] >= latest_replication_timestamp:
+                yield record
+
+
+class CoinCirculatingSupplyChartByIdStream(DynamicIDCoingeckoStream):
+    """Coingecko Circulating Supply Chart By ID Stream."""
+
+    name = "coin_circulating_supply_chart_by_id"
+    path = "/coins"
+    replication_key = "timestamp"
+    primary_keys = ["id", "timestamp", "circulating_supply"]
+    is_sorted = True
+    is_timestamp_replication_key = True
+
+    schema = th.PropertiesList(
+        th.Property("id", th.StringType),
+        th.Property("timestamp", th.DateTimeType),
+        th.Property("circulating_supply", th.NumberType),
+    ).to_dict()
+
+    def raise_coingecko_non_enterprise_warning(self):
+        if self.config.get("subscription_level").lower() != "enterprise":
+            raise ValueError(
+                f"""
+                Cannot call `raise_coingecko_non_enterprise_warning` method for non-enterprise plans.
+                If you have an enterprise plan, set the `subscription_level` to enterprise in meltano.yml
+            """
+            )
+
+        self.logger.info(
+            f"""
+             Running exclusive enterprise endpoint coin_circulating_supply_chart_by_id. Per Coingecko API: 
+                You may leave the interval params as empty for automatic granularity:
+                    1 day from now = 5-minutely data
+                    2-90 days from now = hourly data
+                    91 days & above from now = daily data (00:00 UTC)
+                    Data Availability: from 22 June 2019
+                    Cache/Update Frequency: 5 minutes
+                    The last completed UTC day (00:00) is available 35 minutes after midnight on the next UTC day (00:35)
+                    Exclusive for Enterprise Plan Subscribers only
+            """
+        )
+
+    def get_days_param(self, starting_date):
+        if starting_date:
+            starting_date = starting_date.date()
+            if "days" in self.stream_params:
+                days_param = min(
+                    (datetime.now().date() - starting_date).days,
+                    self.stream_params.get("days"),
+                )
+            else:
+                days_param = (datetime.now().date() - starting_date).days
+        else:
+            if "days" in self.stream_params:
+                days_param = self.stream_params.get("days")
+            else:
+                days_param = None
+        return days_param
+
+    def get_url(self, context: dict | None) -> str:
+        state = self.get_context_state(context)
+        starting_date = self.get_starting_timestamp(context)
+        stream_params = self.config.get("stream_params").get(self.name).copy()
+
+        days_param = self.get_days_param(starting_date)
+
+        if "days" in stream_params:
+            stream_params["days"] = min(days_param, self.stream_params.get("days"))
+        else:
+            stream_params["days"] = days_param
+
+        if state and "context" in state.keys() and "id" in state["context"].keys():
+            self.ticker = state["context"]["id"]
+        else:
+            self.ticker = stream_params["id"]
+
+        url_params = stream_params.copy()
+        url = f"{self.url_base}{self.path}/{self.ticker}/circulating_supply_chart"
+
+        if stream_params:
+            url_params.pop("ids") if "ids" in url_params else url_params.pop("id")
+            encoded_params = urlencode(url_params)
+            url = f"{url}?{encoded_params}"
+
+        return url
+
+    def request_records(self, context: dict | None) -> Iterable[dict]:
+        url = self.get_url(context)
+        response = requests.get(
+            url, headers={"x-cg-pro-api-key": self.config.get("api_key")}
+        )
+
+        result = response.json()
+
+        assert (
+            isinstance(result, dict) and "error" not in result
+        ), f"response returned an error for coin {context['id']}"
+
+        cleaned_result = [
+            {
+                "id": context.get("id"),
+                "timestamp": datetime.fromtimestamp(item[0] / 1000),
+                "circulating_supply": float(item[1]),
+            }
+            for item in result["circulating_supply"]
+        ]
+
+        latest_replication_timestamp = datetime.strptime(
+            self.get_starting_replication_key_value(context), "%Y-%m-%dT%H:%M:%S%z"
+        ).replace(tzinfo=None)
+
+        for record in cleaned_result:
             if record["timestamp"] >= latest_replication_timestamp:
                 yield record

@@ -13,7 +13,6 @@ plugins:
     namespace: "tap_coingecko"
 
     pip_url: -e .
-
     capabilities:
       - state
       - catalog
@@ -59,7 +58,7 @@ plugins:
           localization: "true"
 
         coin_historical_data_chart_by_id_daily:
-          # can pass a single id or comma separated ids, but cannot use both
+          # can pass a single id or comma separated ids but not both
           ids: solana,bitcoin,bag,ethereum,cardano
           vs_currency: usd
           days: 1000
@@ -67,7 +66,7 @@ plugins:
           precision: full
 
         coin_historical_data_chart_by_id_hourly:
-          # can pass a single id or comma separated ids, but cannot use both
+          # can pass a single id or comma separated ids but not both
           ids: bag,nano,cardano
           vs_currency: usd
           days: 90
@@ -75,7 +74,7 @@ plugins:
           precision: full
 
         coin_historical_data_chart_by_id_5m:
-          # can pass a single id or comma separated ids, but cannot use both
+          # can pass a single id or comma separated ids but not both
           ids: solana,bitcoin,nano
           vs_currency: usd
           days: 10
@@ -83,13 +82,19 @@ plugins:
           precision: full
 
         coin_ohlc_chart_by_id:
-          # if some parameters are empty, defaults are set automatically: https://docs.coingecko.com/reference/coins-id-ohlc
-          # can pass a single id or comma separated ids, but cannot use both
-          ids: solana,bitcoin,bag
+          # Coingecko API sets the interval granularity by default: https://docs.coingecko.com/reference/coins-id-ohlc
+          #  can pass a single id or comma separated ids but not both
+          ids: solana,the-open-network
           vs_currency: usd
           days: 1
 #          interval: daily
           precision: full
+
+        coin_circulating_supply_chart_by_id:
+          # can pass a single id or comma separated ids but not both
+          id: filecoin
+          days: 1
+#          interval: daily
 
     select:
       - '*.*'
