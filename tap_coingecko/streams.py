@@ -12,6 +12,9 @@ from urllib.parse import urlencode
 from datetime import datetime, timedelta
 from singer_sdk import typing as th
 
+from dateutil.parser import parse
+
+
 CUSTOM_JSON_SCHEMA = {
     "additionalProperties": True,
     "description": "Custom JSON typing.",
@@ -748,9 +751,8 @@ class CoinCirculatingSupplyChartByIdStream(DynamicIDCoingeckoStream):
             for item in result["circulating_supply"]
         ]
 
-        latest_replication_timestamp = datetime.strptime(
-            self.get_starting_replication_key_value(context), "%Y-%m-%dT%H:%M:%S%z"
-        ).replace(tzinfo=None)
+        latest_replication_timestamp = self.get_starting_replication_key_value(context)
+        latest_replication_timestamp = parse(latest_replication_timestamp).replace(tzinfo=None)
 
         for record in cleaned_result:
             if record["timestamp"] >= latest_replication_timestamp:
