@@ -530,6 +530,12 @@ class CoinHistoricalDataChartByIdStream(DynamicIDCoingeckoStream):
             "error" not in result.keys()
         ), f"response returned an error for coin {context['id']}"
 
+        replication_timestamp = self.get_starting_replication_key_value(context)
+        if replication_timestamp:
+            last_timestamp = datetime.fromisoformat(replication_timestamp).replace(
+                tzinfo=None
+            )
+
         for price, market_cap, volume in zip(
             result["prices"], result["market_caps"], result["total_volumes"]
         ):
@@ -543,7 +549,8 @@ class CoinHistoricalDataChartByIdStream(DynamicIDCoingeckoStream):
                 "volume": volume[1],
             }
 
-            yield entry
+            if last_timestamp is None or entry["timestamp"] >= last_timestamp:
+                yield entry
 
 
 class CoinHistoricalDataChartByIdStream5m(CoinHistoricalDataChartByIdStream):
